@@ -1,0 +1,13 @@
+[versions]
+shadow = "9.6.1"
+spotless = "8.10.2"
+blossom = "2.2.0"
+diffpatch = "2.1.0.43"
+
+[libraries]
+shadow = { module = "com.gradleup.shadow:shadow-gradle-plugin", version.ref = "shadow" }
+spotless = { module = "com.diffplug.spotless:spotless-plugin-gradle", version.ref = "spotless" }
+diffpatch = { module = "io.codechicken:DiffPatch", version.ref = "diffpatch" }
+
+[plugins]
+blossom = { id = "net.kyori.blossom", version.ref = "blossom" }
