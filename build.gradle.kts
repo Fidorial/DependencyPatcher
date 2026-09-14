@@ -45,3 +45,46 @@ gradlePlugin {
         }
     }
 }
+
+publishing {
+    publications.withType<MavenPublication>().configureEach {
+        pom {
+            name = "dependency-patcher"
+            url = "https://github.com/Fidorial/DependencyPatcher"
+            licenses {
+                license {
+                    name = "MIT License"
+                    url = "https://opensource.org/license/mit"
+                }
+            }
+            developers {
+                developer {
+                    id = "fidorial"
+                    name = "Fidorial"
+                }
+            }
+            scm {
+                url = "https://github.com/Fidorial/DependencyPatcher"
+                connection = "scm:git:https://github.com/Fidorial/DependencyPatcher.git"
+                developerConnection = "scm:git:ssh://git@github.com/Fidorial/DependencyPatcher.git"
+            }
+        }
+    }
+
+    repositories {
+        maven {
+            name = "Euphyllia"
+            url = uri(
+                if (version.toString().endsWith("SNAPSHOT")) {
+                    "https://repo.euphyllia.moe/repository/maven-snapshots/"
+                } else {
+                    "https://repo.euphyllia.moe/repository/maven-releases/"
+                },
+            )
+            credentials {
+                username = providers.environmentVariable("NEXUS_USERNAME").orNull ?: ""
+                password = providers.environmentVariable("NEXUS_PASSWORD").orNull ?: ""
+            }
+        }
+    }
+}
