@@ -3,6 +3,17 @@ dependency-patcher
 dependency-patcher is a Gradle plugin for patching dependencies. Patches are diffed and applied against the dependency's own published sources, then recompiled and repacked back into the original jar.
 
 ## Usage
+Add the maven repository to your `settings.gradle[.kts]` file:
+
+```kotlin
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        maven("https://repo.euphyllia.moe/repository/maven-public/")
+    }
+}
+```
+
 Apply the plugin to your project. It requires a minimum of Gradle 9.4 and Java 17.
 
 ```kotlin
