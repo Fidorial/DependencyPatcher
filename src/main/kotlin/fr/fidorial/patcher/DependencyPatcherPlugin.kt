@@ -16,7 +16,9 @@ import fr.fidorial.patcher.util.PATCHED_CLASSIFIER
 import fr.fidorial.patcher.util.PATCHER_TASK_GROUP
 import fr.fidorial.patcher.util.applyPatchesTaskName
 import fr.fidorial.patcher.util.binaryConfigName
+import fr.fidorial.patcher.util.extractPatchedFilesTaskName
 import fr.fidorial.patcher.util.generatedSourcesDir
+import fr.fidorial.patcher.util.patchDependenciesConfigName
 import fr.fidorial.patcher.util.patchOutputDir
 import fr.fidorial.patcher.util.patchSourceSetName
 import fr.fidorial.patcher.util.patchedJarTaskName
@@ -25,11 +27,13 @@ import fr.fidorial.patcher.util.rebuildPatchesTaskName
 import fr.fidorial.patcher.util.rejectsDirPath
 import fr.fidorial.patcher.util.setupWorkspaceTaskName
 import fr.fidorial.patcher.util.sourcesConfigName
+import fr.fidorial.patcher.util.toUpperCamel
 import fr.fidorial.patcher.util.workspaceSourceSetName
 import org.gradle.api.NamedDomainObjectProvider
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
+import org.gradle.api.artifacts.DependencyScopeConfiguration
 import org.gradle.api.file.DuplicatesStrategy
 import org.gradle.api.file.RegularFile
 import org.gradle.api.provider.Provider
@@ -44,6 +48,7 @@ import org.gradle.kotlin.dsl.invoke
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.newInstance
 import org.gradle.kotlin.dsl.register
+import kotlin.collections.forEach
 
 class DependencyPatcherPlugin : Plugin<Project> {
     override fun apply(project: Project) {
@@ -72,7 +77,7 @@ class DependencyPatcherPlugin : Plugin<Project> {
         project: Project,
         diffPatchTool: NamedDomainObjectProvider<out Configuration>,
     ) {
-        val capitalized = name.replaceFirstChar(Char::uppercase)
+        val capitalized = name.toUpperCamel()
 
         val originalSources =
             project.configurations.resolvable(sourcesConfigName(name)) {
@@ -111,6 +116,12 @@ class DependencyPatcherPlugin : Plugin<Project> {
                 originalBinary.flatMap { it.elements.map { it.single().asFile } },
             )
 
+        val patchDependencies =
+            project.configurations.dependencyScope(patchDependenciesConfigName(name)) {
+                description = "Dependencies needed to compile the patched sources of '${this@configure.name}'."
+                fromDependencyCollector(this@configure.dependencies.compileOnly)
+            }
+
         val patchedZip = project.layout.buildDirectory.file(patchedZipPath(name))
         val rejects = project.layout.buildDirectory.dir(rejectsDirPath(name))
 
@@ -145,9 +156,8 @@ class DependencyPatcherPlugin : Plugin<Project> {
 
         sourceSets.register(workspaceSourceSetName(name)) {
             java.srcDir(setupWorkspace.map { it.destinationDir })
-            this@configure.dependenciesFrom.get().forEach {
-                val sourceSetToJoin = sourceSets.named(it)
-                compileClasspath += sourceSetToJoin.get().compileClasspath
+            project.configurations.named(compileOnlyConfigurationName) {
+                extendsFrom(patchDependencies)
             }
         }
 
@@ -171,6 +181,7 @@ class DependencyPatcherPlugin : Plugin<Project> {
                 applyPatches = applyPatches,
                 rebuildPatches = rebuildPatches,
                 originalBinaryJar = originalBinaryJar,
+                patchDependenciesConfiguration = patchDependencies,
             )
         }
     }
@@ -182,6 +193,7 @@ class DependencyPatcherPlugin : Plugin<Project> {
         applyPatches: TaskProvider<ApplyPatchesTask>,
         rebuildPatches: TaskProvider<RebuildPatchesTask>,
         originalBinaryJar: Provider<RegularFile>,
+        patchDependenciesConfiguration: NamedDomainObjectProvider<DependencyScopeConfiguration>,
     ) {
         val sourceSets = project.extensions.getByType<SourceSetContainer>()
 
@@ -195,7 +207,7 @@ class DependencyPatcherPlugin : Plugin<Project> {
         }
 
         val extractPatchedFiles =
-            project.tasks.register<ExtractPatchedFilesTask>("extract${capitalized}PatchedFiles") {
+            project.tasks.register<ExtractPatchedFilesTask>(extractPatchedFilesTaskName(patchSet.name)) {
                 group = INTERNAL_PATCHER_TASK_GROUP
                 description = "Extracts changed files for '${patchSet.name}'."
                 patchedZip.set(applyPatches.flatMap { it.outputZip })
@@ -208,6 +220,9 @@ class DependencyPatcherPlugin : Plugin<Project> {
                 java.srcDir(extractPatchedFiles.flatMap { it.outputDir })
                 if (!patchSet.module.isPresent) {
                     compileClasspath += project.files(originalBinaryJar)
+                }
+                project.configurations.named(compileOnlyConfigurationName) {
+                    extendsFrom(patchDependenciesConfiguration)
                 }
             }
 
@@ -231,7 +246,10 @@ class DependencyPatcherPlugin : Plugin<Project> {
                 destinationDirectory.set(project.layout.buildDirectory.dir(patchOutputDir(patchSet.name)))
                 duplicatesStrategy = DuplicatesStrategy.EXCLUDE
                 from(patchSourceSet.map { it.output })
-                from(project.zipTree(originalBinaryJar))
+                from(project.zipTree(originalBinaryJar)) {
+                    // we can never match the original signature
+                    exclude("META-INF/*.SF", "META-INF/*.RSA", "META-INF/*.DSA", "META-INF/*.EC", "META-INF/SIG-*")
+                }
             }
 
         patchSet.targetConfigurations.get().forEach { config ->

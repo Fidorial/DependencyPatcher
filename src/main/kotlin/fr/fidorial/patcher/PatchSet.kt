@@ -2,11 +2,14 @@ package fr.fidorial.patcher
 
 import io.codechicken.diffpatch.match.FuzzyLineMatcher
 import io.codechicken.diffpatch.util.PatchMode
+import org.gradle.api.Action
 import org.gradle.api.Named
 import org.gradle.api.NamedDomainObjectProvider
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ConfigurationContainer
 import org.gradle.api.artifacts.ExternalModuleDependency
+import org.gradle.api.artifacts.dsl.Dependencies
+import org.gradle.api.artifacts.dsl.DependencyCollector
 import org.gradle.api.artifacts.dsl.DependencyFactory
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.ProjectLayout
@@ -14,6 +17,7 @@ import org.gradle.api.model.ObjectFactory
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
+import org.gradle.api.tasks.Nested
 import org.gradle.api.tasks.SourceSet.MAIN_SOURCE_SET_NAME
 import org.gradle.kotlin.dsl.listProperty
 import org.gradle.kotlin.dsl.property
@@ -112,14 +116,35 @@ abstract class PatchSet
             )
 
         /**
-         * The names of source sets whose dependencies should be inherited by the patched dependency's generated source set.
-         */
-        val dependenciesFrom: ListProperty<String> = objects.listProperty<String>().convention(listOf(MAIN_SOURCE_SET_NAME))
-
-        /**
          * Whether compilation should automatically rebuild patches when a workspace has been generated.
          *
          * Useful for testing changes during development, as only changes saved to patch files are used during compilation.
          */
         val autoRebuild: Property<Boolean> = objects.property<Boolean>().convention(false)
+
+        /**
+         * Dependencies needed to compile this patch set's patched sources and its workspace.
+         *
+         * The patched library itself is resolved non-transitively, and main's classpath cannot be reused
+         * because it contains the patched jars, so anything the patched sources import must be declared here.
+         */
+        @get:Nested
+        abstract val dependencies: PatchSetDependencies
+
+        /**
+         * Configures the [dependencies] of this patch set.
+         *
+         */
+        fun dependencies(action: Action<in PatchSetDependencies>) = action.execute(dependencies)
     }
+
+/**
+ * Dependency buckets available in a patch set's `dependencies {}` block.
+ */
+interface PatchSetDependencies : Dependencies {
+    /**
+     * Dependencies on the compile classpath of the patched sources and the workspace only.
+     * They are not added to the consuming project's classpath.
+     */
+    val compileOnly: DependencyCollector
+}

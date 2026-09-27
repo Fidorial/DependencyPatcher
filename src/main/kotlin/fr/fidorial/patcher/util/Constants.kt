@@ -19,21 +19,35 @@ const val DIFF_PATCH_RESOLVABLE_CONFIG_NAME = "${CONFIG_PREFIX}DiffPatchResolvab
 private const val BUILD_OUTPUT_ROOT = "dependency-patcher"
 private const val GENERATED_SOURCES_ROOT = "generated/sources/dependency-patcher"
 
-fun sourcesConfigName(patchSetName: String) = "$CONFIG_PREFIX${patchSetName.replaceFirstChar(Char::uppercase)}SourcesConfig"
+private val NAME_SEPARATORS = Regex("[^A-Za-z0-9]+")
 
-fun binaryConfigName(patchSetName: String) = "$CONFIG_PREFIX${patchSetName.replaceFirstChar(Char::uppercase)}BinaryConfig"
+fun String.toLowerCamel(): String =
+    split(NAME_SEPARATORS)
+        .filter(String::isNotEmpty)
+        .mapIndexed { index, part ->
+            if (index == 0) part.replaceFirstChar(Char::lowercase) else part.replaceFirstChar(Char::uppercase)
+        }.joinToString("")
 
-fun workspaceSourceSetName(patchSetName: String) = "${patchSetName}Workspace"
+fun String.toUpperCamel(): String = toLowerCamel().replaceFirstChar(Char::uppercase)
 
-fun patchSourceSetName(patchSetName: String) = "${patchSetName}Patch"
+fun sourcesConfigName(patchSetName: String) = "$CONFIG_PREFIX${patchSetName.toUpperCamel()}SourcesConfig"
 
-fun applyPatchesTaskName(capitalized: String) = "apply${capitalized}Patches"
+fun binaryConfigName(patchSetName: String) = "$CONFIG_PREFIX${patchSetName.toUpperCamel()}BinaryConfig"
 
-fun setupWorkspaceTaskName(capitalized: String) = "setup${capitalized}PatchWorkspace"
+fun workspaceSourceSetName(patchSetName: String) = "${patchSetName.toLowerCamel()}Workspace"
 
-fun rebuildPatchesTaskName(capitalized: String) = "rebuild${capitalized}Patches"
+fun patchSourceSetName(patchSetName: String) = "${patchSetName.toLowerCamel()}Patch"
 
-fun patchedJarTaskName(capitalized: String) = "patched${capitalized}Jar"
+// Task name helpers accept either the raw patch set name or an already capitalized one.
+fun applyPatchesTaskName(patchSetName: String) = "apply${patchSetName.toUpperCamel()}Patches"
+
+fun setupWorkspaceTaskName(patchSetName: String) = "setup${patchSetName.toUpperCamel()}PatchWorkspace"
+
+fun rebuildPatchesTaskName(patchSetName: String) = "rebuild${patchSetName.toUpperCamel()}Patches"
+
+fun patchedJarTaskName(patchSetName: String) = "patched${patchSetName.toUpperCamel()}Jar"
+
+fun extractPatchedFilesTaskName(patchSetName: String) = "extract${patchSetName.toUpperCamel()}PatchedFiles"
 
 fun patchOutputDir(patchSetName: String) = "$BUILD_OUTPUT_ROOT/$patchSetName"
 
@@ -42,3 +56,5 @@ fun patchedZipPath(patchSetName: String) = "${patchOutputDir(patchSetName)}/patc
 fun rejectsDirPath(patchSetName: String) = "${patchOutputDir(patchSetName)}/rejects"
 
 fun generatedSourcesDir(patchSetName: String) = "$GENERATED_SOURCES_ROOT/$patchSetName"
+
+fun patchDependenciesConfigName(patchSetName: String) = "${patchSetName.toLowerCamel()}PatchDependencies"
