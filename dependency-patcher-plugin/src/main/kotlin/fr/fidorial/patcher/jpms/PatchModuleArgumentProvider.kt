@@ -2,11 +2,9 @@ package fr.fidorial.patcher.jpms
 
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
+import org.gradle.api.tasks.Classpath
 import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.Optional
-import org.gradle.api.tasks.PathSensitive
-import org.gradle.api.tasks.PathSensitivity
 import org.gradle.process.CommandLineArgumentProvider
 
 abstract class PatchModuleArgumentProvider : CommandLineArgumentProvider {
@@ -18,8 +16,7 @@ abstract class PatchModuleArgumentProvider : CommandLineArgumentProvider {
     @get:Optional
     abstract val joinedModule: Property<String>
 
-    @get:InputFile
-    @get:PathSensitive(PathSensitivity.NONE)
+    @get:Classpath
     abstract val patchModule: RegularFileProperty
 
     override fun asArguments(): Iterable<String> {

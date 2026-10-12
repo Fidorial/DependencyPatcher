@@ -2,6 +2,8 @@ package fr.fidorial.patcher.task
 
 import fr.fidorial.patcher.workers.ApplyPatchesWorkAction
 import io.codechicken.diffpatch.util.PatchMode
+import javax.inject.Inject
+import kotlin.io.path.copyTo
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
@@ -9,6 +11,7 @@ import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Classpath
+import org.gradle.api.tasks.IgnoreEmptyDirectories
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.Optional
@@ -18,8 +21,6 @@ import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 import org.gradle.workers.WorkerExecutor
-import javax.inject.Inject
-import kotlin.io.path.copyTo
 
 @CacheableTask
 abstract class ApplyPatchesTask : DefaultTask() {
@@ -30,6 +31,7 @@ abstract class ApplyPatchesTask : DefaultTask() {
     abstract val originalJar: RegularFileProperty
 
     @get:InputDirectory
+    @get:IgnoreEmptyDirectories
     @get:PathSensitive(PathSensitivity.RELATIVE)
     @get:Optional
     abstract val patchesDir: DirectoryProperty
@@ -64,18 +66,12 @@ abstract class ApplyPatchesTask : DefaultTask() {
         }
 
         workerExecutor
-            .classLoaderIsolation {
-                classpath.from(toolClasspath)
-            }.submit(ApplyPatchesWorkAction::class.java) {
-                originalJar.set(original.absolutePath)
-                patchesDir.set(patches.absolutePath)
-                outputZip.set(output.absolutePath)
-                rejectsDir.set(
-                    this@ApplyPatchesTask
-                        .rejectsDir
-                        .get()
-                        .asFile.absolutePath,
-                )
+            .classLoaderIsolation { classpath.from(toolClasspath) }
+            .submit(ApplyPatchesWorkAction::class.java) {
+                originalJar.set(this@ApplyPatchesTask.originalJar)
+                patchesDir.set(this@ApplyPatchesTask.patchesDir)
+                outputZip.set(this@ApplyPatchesTask.outputZip)
+                rejectsDir.set(this@ApplyPatchesTask.rejectsDir)
                 mode.set(this@ApplyPatchesTask.mode)
                 minFuzz.set(this@ApplyPatchesTask.minFuzz)
                 maxOffset.set(this@ApplyPatchesTask.maxOffset)

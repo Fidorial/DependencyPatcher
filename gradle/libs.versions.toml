@@ -1,6 +1,6 @@
 [versions]
 shadow = "9.6.1"
-spotless = "8.10.2"
+spotless = "8.10.4"
 blossom = "2.2.0"
 diffpatch = "2.1.0.43"
 

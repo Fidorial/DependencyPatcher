@@ -45,6 +45,8 @@ fun setupWorkspaceTaskName(patchSetName: String) = "setup${patchSetName.toUpperC
 
 fun rebuildPatchesTaskName(patchSetName: String) = "rebuild${patchSetName.toUpperCamel()}Patches"
 
+fun cleanWorkspaceTaskName(patchSetName: String) = "clean${patchSetName.toUpperCamel()}Workspace"
+
 fun patchedJarTaskName(patchSetName: String) = "patched${patchSetName.toUpperCamel()}Jar"
 
 fun extractPatchedFilesTaskName(patchSetName: String) = "extract${patchSetName.toUpperCamel()}PatchedFiles"

@@ -74,13 +74,14 @@ publishing {
     repositories {
         maven {
             name = "Euphyllia"
-            url = uri(
-                if (version.toString().endsWith("SNAPSHOT")) {
-                    "https://repo.euphyllia.moe/repository/maven-snapshots/"
-                } else {
-                    "https://repo.euphyllia.moe/repository/maven-releases/"
-                },
-            )
+            url =
+                uri(
+                    if (version.toString().endsWith("SNAPSHOT")) {
+                        "https://repo.euphyllia.moe/repository/maven-snapshots/"
+                    } else {
+                        "https://repo.euphyllia.moe/repository/maven-releases/"
+                    }
+                )
             credentials {
                 username = providers.environmentVariable("NEXUS_USERNAME").orNull ?: ""
                 password = providers.environmentVariable("NEXUS_PASSWORD").orNull ?: ""

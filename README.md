@@ -42,6 +42,24 @@ Patches from `patches/example` are applied against the dependency's sources, rec
 > [!NOTE]
 > The `exampleWorkspace` source set isn't populated by default. Run `setup<Name>PatchWorkspace` to populate it.
 
+### Patch dependencies
+
+The patched library is resolved non-transitively, and the consuming project's classpath can't be reused since it contains the patched jars. Anything the patched sources import must be declared in the patch set's `dependencies {}` block:
+
+```kotlin
+dependencyPatcher {
+  patchSet("example") {
+    library("com.example:example-lib:1.0.0")
+    dependencies {
+      compileOnly("org.jetbrains:annotations:26.0.2")
+      compileOnly(libs.guava)
+    }
+  }
+}
+```
+
+`compileOnly` dependencies are only placed on the compile classpath of the patched sources and the `<name>Workspace` source set. They are never added to the consuming project's classpath.
+
 ### Restrictions
 
 - **Java sources only.** Only `.java` files under the workspace source set are diffed, patched, and recompiled. Other JVM languages (Kotlin, Scala, Groovy, etc.) in the dependency's sources are not supported.
@@ -60,6 +78,9 @@ IDEs typically don't pick up patch changes automatically on sync. To see them re
 After editing files in a patch set's workspace directory, run `rebuild<Name>Patches` to diff the workspace against the original sources and regenerate the patch files.
 You can also set `autoRebuild = true` on a patch set to have compilation rebuild from the current workspace state on every run; useful for development.
 
+> [!WARNING]
+> With `autoRebuild` enabled, the workspace is the source of truth. After pulling new patches, run `setup<Name>PatchWorkspace` before building, otherwise the stale workspace will overwrite them.
+
 ## Tasks
 
 > [!TIP]
@@ -70,5 +91,13 @@ Per patch set `<name>` (capitalized, e.g. `Example`), the plugin registers:
 - `apply<Name>Patches` — applies patches to the original sources
 - `setup<Name>PatchWorkspace` — extracts the patched sources into the `<name>Workspace` source set for editing
 - `rebuild<Name>Patches` — diffs the workspace against the original sources and outputs patches
+- `clean<Name>Workspace` — deletes the patch set's workspace
+
+Each of these also has an aggregate task that runs it for every patch set:
+
+- `applyAllPatches`
+- `setupAllWorkspaces`
+- `rebuildAllPatches`
+- `cleanAllWorkspaces`
 
 See [`PatchSet`](dependency-patcher-plugin/src/main/kotlin/fr/fidorial/patcher/PatchSet.kt) for the full set of configurable options.
