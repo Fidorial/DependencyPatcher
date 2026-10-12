@@ -71,4 +71,4 @@ Per patch set `<name>` (capitalized, e.g. `Example`), the plugin registers:
 - `setup<Name>PatchWorkspace` — extracts the patched sources into the `<name>Workspace` source set for editing
 - `rebuild<Name>Patches` — diffs the workspace against the original sources and outputs patches
 
-See [`PatchSet`](src/main/kotlin/fr/fidorial/patcher/PatchSet.kt) for the full set of configurable options.
+See [`PatchSet`](dependency-patcher-plugin/src/main/kotlin/fr/fidorial/patcher/PatchSet.kt) for the full set of configurable options.
