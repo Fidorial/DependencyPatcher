@@ -7,6 +7,7 @@ const val PATCHER_TASK_GROUP = PLUGIN_NAME
 const val INTERNAL_PATCHER_TASK_GROUP = "$PLUGIN_NAME internal"
 
 const val JAVA_PLUGIN_ID = "java"
+const val SHADOW_PLUGIN_ID = "com.gradleup.shadow"
 const val PATCHED_CLASSIFIER = "patched"
 
 const val DIFF_PATCH_COORDINATES_PREFIX = "io.codechicken:DiffPatch"

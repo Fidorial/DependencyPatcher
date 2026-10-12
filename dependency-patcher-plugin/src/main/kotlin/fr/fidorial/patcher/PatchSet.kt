@@ -16,8 +16,10 @@ import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.ProjectLayout
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.plugins.JavaPlugin
+import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Nested
+import org.gradle.kotlin.dsl.mapProperty
 import org.gradle.kotlin.dsl.property
 import org.gradle.kotlin.dsl.setProperty
 
@@ -116,6 +118,18 @@ abstract class PatchSet @Inject constructor(
      * Useful for testing changes during development, as only changes saved to patch files are used during compilation.
      */
     val autoRebuild: Property<Boolean> = objects.property<Boolean>().convention(false)
+
+    /**
+     * Package relocations applied to the patched jar when the Shadow plugin is applied.
+     */
+    val relocations: MapProperty<String, String> = objects.mapProperty()
+
+    /**
+     * Relocates package [from] to [to] in the patched jar. Requires the Shadow plugin.
+     */
+    fun relocate(from: String, to: String) {
+        relocations.put(from, to)
+    }
 
     /**
      * Dependencies needed to compile this patch set's patched sources and its workspace.

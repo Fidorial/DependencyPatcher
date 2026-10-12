@@ -22,6 +22,7 @@ java {
 
 dependencies {
     shade(libs.diffpatch)
+    compileOnly(libs.shadow)
 }
 
 sourceSets.main {

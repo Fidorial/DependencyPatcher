@@ -2,6 +2,7 @@ package fr.fidorial.patcher
 
 import fr.fidorial.patcher.extension.DependencyPatcherExtension
 import fr.fidorial.patcher.jpms.PatchModuleArgumentProvider
+import fr.fidorial.patcher.shadow.ShadowIntegration
 import fr.fidorial.patcher.task.ApplyPatchesTask
 import fr.fidorial.patcher.task.ExtractPatchedFilesTask
 import fr.fidorial.patcher.task.RebuildPatchesTask
@@ -14,6 +15,7 @@ import fr.fidorial.patcher.util.JAVA_PLUGIN_ID
 import fr.fidorial.patcher.util.LibraryVersions
 import fr.fidorial.patcher.util.PATCHED_CLASSIFIER
 import fr.fidorial.patcher.util.PATCHER_TASK_GROUP
+import fr.fidorial.patcher.util.SHADOW_PLUGIN_ID
 import fr.fidorial.patcher.util.applyPatchesTaskName
 import fr.fidorial.patcher.util.binaryConfigName
 import fr.fidorial.patcher.util.cleanWorkspaceTaskName
@@ -280,7 +282,7 @@ abstract class DependencyPatcherPlugin : Plugin<Project> {
             }
         }
 
-        val patchedJar = tasks.register<Jar>(patchedJarTaskName(capitalized)) {
+        val configurePatchedJar: Jar.() -> Unit = {
             group = INTERNAL_PATCHER_TASK_GROUP
 
             archiveBaseName.set(patchSet.name)
@@ -292,6 +294,12 @@ abstract class DependencyPatcherPlugin : Plugin<Project> {
                 // we can never match the original signature
                 exclude("META-INF/*.SF", "META-INF/*.RSA", "META-INF/*.DSA", "META-INF/*.EC", "META-INF/SIG-*")
             }
+        }
+
+        val patchedJar = if (project.pluginManager.hasPlugin(SHADOW_PLUGIN_ID)) {
+            ShadowIntegration.registerPatchedJar(tasks, patchedJarTaskName(capitalized), patchSet, configurePatchedJar)
+        } else {
+            tasks.register<Jar>(patchedJarTaskName(capitalized), configurePatchedJar)
         }
 
         patchSet.targetConfigurations.get().forEach { config ->
