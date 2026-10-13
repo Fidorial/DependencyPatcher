@@ -60,6 +60,44 @@ dependencyPatcher {
 
 `compileOnly` dependencies are only placed on the compile classpath of the patched sources and the `<name>Workspace` source set. They are never added to the consuming project's classpath.
 
+### Shadow integration
+
+You can also configure relocation for the patched jar, using the following piece of code:
+
+> [!TIP]
+> Relocation requires you to have the `com.gradleup.shadow` plugin applied.
+
+```kotlin
+dependencyPatcher {
+  patchSet("example") {
+    library("com.example:example-lib:1.0.0")
+    relocate("com.example.common", "com.example.common.patched")
+    dependencies {
+      compileOnly("org.jetbrains:annotations:26.0.2")
+      compileOnly(libs.guava)
+    }
+  }
+}
+```
+
+or alternatively:
+
+```kotlin
+dependencyPatcher {
+  patchSet("example") {
+    library("com.example:example-lib:1.0.0")
+    relocations = mapOf(
+        "com.example.api" to "com.example.api.patched",
+        "com.example.dependency" to "com.example.dependency.patched",
+    )
+    dependencies {
+      compileOnly("org.jetbrains:annotations:26.0.2")
+      compileOnly(libs.guava)
+    }
+  }
+}
+```
+
 ### Restrictions
 
 - **Java sources only.** Only `.java` files under the workspace source set are diffed, patched, and recompiled. Other JVM languages (Kotlin, Scala, Groovy, etc.) in the dependency's sources are not supported.
